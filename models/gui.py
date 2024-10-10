@@ -4,7 +4,7 @@ import sys
 from PyQt5.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
     QPushButton, QLineEdit, QLabel, QListWidget, QMessageBox, QGraphicsView,
-    QGraphicsScene, QGraphicsEllipseItem, QGraphicsTextItem, QGraphicsLineItem
+    QGraphicsScene, QGraphicsEllipseItem, QGraphicsTextItem, QGraphicsLineItem, QGridLayout
 )
 from PyQt5.QtGui import QPainter, QPen, QBrush, QColor
 from PyQt5.QtCore import Qt, QPointF, QTimer
@@ -138,16 +138,49 @@ class MainWindow(QMainWindow):
         # Área de control (insertar, eliminar, buscar)
         control_layout = QHBoxLayout()
 
-        # Inserción
+        # Inserción de clave
         self.insert_key_input = QLineEdit()
         self.insert_key_input.setPlaceholderText("Clave")
-        insert_button = QPushButton("Insertar")
-        insert_button.clicked.connect(self.insert_node)
-
-        control_layout.addWidget(QLabel("Insertar:"))
+        control_layout.addWidget(QLabel("Insertar Clave:"))
         control_layout.addWidget(self.insert_key_input)
-        control_layout.addWidget(insert_button)
 
+        # Información adicional
+        self.label_nombre = QLabel("Nombre del Producto:")
+        self.input_nombre = QLineEdit()
+
+        control_layout.addWidget(self.label_nombre)
+        control_layout.addWidget(self.input_nombre)
+
+        self.label_cantidad = QLabel("Cantidad Disponible:")
+        self.input_cantidad = QLineEdit()
+
+        control_layout.addWidget(self.label_cantidad)
+        control_layout.addWidget(self.input_cantidad)
+
+
+        self.label_precio = QLabel("Precio del Producto:")
+        self.input_precio = QLineEdit()
+
+
+        control_layout.addWidget(self.label_precio)
+        control_layout.addWidget(self.input_precio)
+
+
+        self.label_categoria = QLabel("Categoría del Producto:")
+        self.input_categoria = QLineEdit()
+
+
+        control_layout.addWidget(self.label_categoria)
+        control_layout.addWidget(self.input_categoria)
+
+
+        main_layout.addLayout(control_layout)
+        
+        #Boton 
+        insert_key_button = QPushButton("Insertar Clave")
+        insert_key_button.clicked.connect(self.insert_node) 
+        control_layout.addWidget(insert_key_button)   
+        
         # Eliminación
         self.delete_key_input = QLineEdit()
         self.delete_key_input.setPlaceholderText("Clave")
@@ -214,6 +247,10 @@ class MainWindow(QMainWindow):
 
     def insert_node(self):
         key_text = self.insert_key_input.text()
+        # nombre = self.input_nombre.text()
+        # cantidad = self.input_cantidad.text()
+        # precio = self.input_precio.text()
+        # categoria = self.input_categoria.text()
 
         if not key_text:
             QMessageBox.warning(self, "Error", "La clave no puede estar vacía.")
