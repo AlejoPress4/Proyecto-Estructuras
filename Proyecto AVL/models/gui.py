@@ -20,8 +20,8 @@ class AVLVisualizer(QGraphicsView):
         self.setScene(self.scene)
         self.setRenderHint(QPainter.Antialiasing)
         self.node_radius = 20
-        self.level_gap = 70
-        self.horizontal_gap = 60
+        self.level_gap = 100
+        self.horizontal_gap = 300
         self.setMinimumHeight(600)
         self.setMinimumWidth(800)
         
@@ -83,7 +83,7 @@ class AVLVisualizer(QGraphicsView):
         y = depth * self.level_gap + self.node_radius * 2
 
         # Modificar el texto del nodo para mostrar más información
-        text = QGraphicsTextItem(f"{node.clave}\n{node.nombre}")
+        text = QGraphicsTextItem(f"{node.clave}")
         text.setDefaultTextColor(Qt.black)
         # Centrar el texto dentro del nodo
         text_width = text.boundingRect().width()
