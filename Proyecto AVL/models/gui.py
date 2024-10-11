@@ -7,7 +7,7 @@ from PyQt5.QtWidgets import (
     QGraphicsScene, QGraphicsEllipseItem, QGraphicsTextItem, QGraphicsLineItem,
     QFileDialog, QFormLayout
 )
-from PyQt5.QtGui import QPainter, QPen, QBrush, QColor
+from PyQt5.QtGui import QPainter, QPen, QBrush, QColor 
 from PyQt5.QtCore import Qt, QPointF, QTimer
 from models.avl import AVLTree
 from collections import deque
