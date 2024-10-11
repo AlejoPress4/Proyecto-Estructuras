@@ -1,8 +1,13 @@
 # avl.py
+import json
 
 class NodoAVL:
-    def __init__(self, clave):
+    def __init__(self, clave, nombre, cantidad, precio, categoria):
         self.clave = clave
+        self.nombre = nombre
+        self.cantidad = cantidad
+        self.precio = precio
+        self.categoria = categoria
         self.altura = 1
         self.izquierda = None
         self.derecha = None
@@ -72,19 +77,23 @@ class AVLTree:
 
         return y
 
-    def insertar(self, clave):
-        self.raiz = self._insertar(self.raiz, clave)
+    def insertar(self, clave, nombre, cantidad, precio, categoria):
+        self.raiz = self._insertar(self.raiz, clave, nombre, cantidad, precio, categoria)
 
-    def _insertar(self, nodo, clave):
+    def _insertar(self, nodo, clave, nombre, cantidad, precio, categoria):
         # Inserción estándar en BST
         if not nodo:
-            return NodoAVL(clave)
+            return NodoAVL(clave, nombre, cantidad, precio, categoria)
         elif clave < nodo.clave:
-            nodo.izquierda = self._insertar(nodo.izquierda, clave)
+            nodo.izquierda = self._insertar(nodo.izquierda, clave, nombre, cantidad, precio, categoria)
         elif clave > nodo.clave:
-            nodo.derecha = self._insertar(nodo.derecha, clave)
+            nodo.derecha = self._insertar(nodo.derecha, clave, nombre, cantidad, precio, categoria)
         else:
-            # Claves duplicadas no permitidas
+            # Actualizar información si la clave ya existe
+            nodo.nombre = nombre
+            nodo.cantidad = cantidad
+            nodo.precio = precio
+            nodo.categoria = categoria
             return nodo
 
         # Actualizar la altura del ancestro nodo
@@ -186,7 +195,13 @@ class AVLTree:
         if not nodo:
             return None
         if clave == nodo.clave:
-            return nodo.clave  # Solo devuelve la clave
+            return {
+                "clave": nodo.clave,
+                "nombre": nodo.nombre,
+                "cantidad": nodo.cantidad,
+                "precio": nodo.precio,
+                "categoria": nodo.categoria
+            }
         elif clave < nodo.clave:
             return self._buscar(nodo.izquierda, clave)
         else:
@@ -200,5 +215,28 @@ class AVLTree:
     def _in_order_traversal(self, nodo, elementos):
         if nodo:
             self._in_order_traversal(nodo.izquierda, elementos)
-            elementos.append(nodo.clave)  # Solo la clave
+            elementos.append({
+                "clave": nodo.clave,
+                "nombre": nodo.nombre,
+                "cantidad": nodo.cantidad,
+                "precio": nodo.precio,
+                "categoria": nodo.categoria
+            })
             self._in_order_traversal(nodo.derecha, elementos)
+            
+    def cargar_desde_json(self, archivo_json):
+        with open(archivo_json, 'r') as file:
+            datos = json.load(file)
+        for producto in datos:
+            self.insertar(
+                producto['clave'],
+                producto['nombre'],
+                producto['cantidad'],
+                producto['precio'],
+                producto['categoria']
+            )
+
+    def guardar_en_json(self, archivo_json):
+        datos = self.in_order_traversal()
+        with open(archivo_json, 'w') as file:
+            json.dump(datos, file, indent=2)

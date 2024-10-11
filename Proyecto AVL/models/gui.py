@@ -4,7 +4,8 @@ import sys
 from PyQt5.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
     QPushButton, QLineEdit, QLabel, QListWidget, QMessageBox, QGraphicsView,
-    QGraphicsScene, QGraphicsEllipseItem, QGraphicsTextItem, QGraphicsLineItem, QGridLayout
+    QGraphicsScene, QGraphicsEllipseItem, QGraphicsTextItem, QGraphicsLineItem,
+    QFileDialog, QFormLayout
 )
 from PyQt5.QtGui import QPainter, QPen, QBrush, QColor
 from PyQt5.QtCore import Qt, QPointF, QTimer
@@ -23,6 +24,10 @@ class AVLVisualizer(QGraphicsView):
         self.horizontal_gap = 60
         self.setMinimumHeight(600)
         self.setMinimumWidth(800)
+        
+        # Configurar políticas de scroll
+        self.setHorizontalScrollBarPolicy(Qt.ScrollBarAsNeeded)
+        self.setVerticalScrollBarPolicy(Qt.ScrollBarAsNeeded)
 
         # Cola para almacenar los eventos de rotación
         self.rotation_events = deque()
@@ -68,17 +73,23 @@ class AVLVisualizer(QGraphicsView):
     def draw_tree(self):
         self.scene.clear()
         if self.avl_tree.raiz:
-            self._draw_node(self.avl_tree.raiz, 0, 0, 0)
-        self.fitInView(self.scene.itemsBoundingRect(), Qt.KeepAspectRatio)
+            # Iniciar el dibujo con la raíz en el centro
+            self._draw_node(self.avl_tree.raiz, 0, self.width() / 2, 0)
+        # Establecer el rectángulo de la escena para abarcar todo el contenido
+        self.scene.setSceneRect(self.scene.itemsBoundingRect())
 
     def _draw_node(self, node, depth, x, parent_x):
         # Calcular posición
-        if depth == 0:
-            x = self.width() / 2
-        else:
-            x = parent_x + x
-
         y = depth * self.level_gap + self.node_radius * 2
+
+        # Modificar el texto del nodo para mostrar más información
+        text = QGraphicsTextItem(f"{node.clave}\n{node.nombre}")
+        text.setDefaultTextColor(Qt.black)
+        # Centrar el texto dentro del nodo
+        text_width = text.boundingRect().width()
+        text_height = text.boundingRect().height()
+        text.setPos(x - text_width / 2, y - text_height / 2)
+        self.scene.addItem(text)
 
         # Dibujar líneas a los hijos primero (para que queden detrás del nodo)
         if node.izquierda:
@@ -87,14 +98,14 @@ class AVLVisualizer(QGraphicsView):
             line = QGraphicsLineItem(x, y, child_x, child_y)
             line.setPen(QPen(Qt.black, 2))
             self.scene.addItem(line)
-            self._draw_node(node.izquierda, depth + 1, -self.horizontal_gap / (depth + 1), x)
+            self._draw_node(node.izquierda, depth + 1, child_x, x)
         if node.derecha:
             child_x = x + self.horizontal_gap / (depth + 1)
             child_y = y + self.level_gap
             line = QGraphicsLineItem(x, y, child_x, child_y)
             line.setPen(QPen(Qt.black, 2))
             self.scene.addItem(line)
-            self._draw_node(node.derecha, depth + 1, self.horizontal_gap / (depth + 1), x)
+            self._draw_node(node.derecha, depth + 1, child_x, x)
 
         # Determinar si el nodo debe ser resaltado
         if node.clave in self.highlighted_nodes:
@@ -117,11 +128,12 @@ class AVLVisualizer(QGraphicsView):
         text_height = text.boundingRect().height()
         text.setPos(x - text_width / 2, y - text_height / 2)
         self.scene.addItem(text)
-
+        
+        
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("Inventario")
+        self.setWindowTitle("Inventario de Productos")
         self.avl = AVLTree()
         self.avl.set_rotation_callback(self.handle_rotation)
         self.init_ui()
@@ -138,68 +150,47 @@ class MainWindow(QMainWindow):
         # Área de control (insertar, eliminar, buscar)
         control_layout = QHBoxLayout()
 
-        # Inserción de clave
+        # Formulario de inserción
+        insert_form_layout = QFormLayout()
         self.insert_key_input = QLineEdit()
-        self.insert_key_input.setPlaceholderText("Clave")
-        control_layout.addWidget(QLabel("Insertar Clave:"))
-        control_layout.addWidget(self.insert_key_input)
+        self.insert_nombre_input = QLineEdit()
+        self.insert_cantidad_input = QLineEdit()
+        self.insert_precio_input = QLineEdit()
+        self.insert_categoria_input = QLineEdit()
 
-        # Información adicional
-        self.label_nombre = QLabel("Nombre del Producto:")
-        self.input_nombre = QLineEdit()
+        insert_form_layout.addRow("Clave:", self.insert_key_input)
+        insert_form_layout.addRow("Nombre:", self.insert_nombre_input)
+        insert_form_layout.addRow("Cantidad:", self.insert_cantidad_input)
+        insert_form_layout.addRow("Precio:", self.insert_precio_input)
+        insert_form_layout.addRow("Categoría:", self.insert_categoria_input)
 
-        control_layout.addWidget(self.label_nombre)
-        control_layout.addWidget(self.input_nombre)
+        insert_button = QPushButton("Insertar")
+        insert_button.clicked.connect(self.insert_node)
+        insert_form_layout.addRow(insert_button)
 
-        self.label_cantidad = QLabel("Cantidad Disponible:")
-        self.input_cantidad = QLineEdit()
+        control_layout.addLayout(insert_form_layout)
 
-        control_layout.addWidget(self.label_cantidad)
-        control_layout.addWidget(self.input_cantidad)
-
-
-        self.label_precio = QLabel("Precio del Producto:")
-        self.input_precio = QLineEdit()
-
-
-        control_layout.addWidget(self.label_precio)
-        control_layout.addWidget(self.input_precio)
-
-
-        self.label_categoria = QLabel("Categoría del Producto:")
-        self.input_categoria = QLineEdit()
-
-
-        control_layout.addWidget(self.label_categoria)
-        control_layout.addWidget(self.input_categoria)
-
-
-        main_layout.addLayout(control_layout)
-        
-        #Boton 
-        insert_key_button = QPushButton("Insertar Clave")
-        insert_key_button.clicked.connect(self.insert_node) 
-        control_layout.addWidget(insert_key_button)   
-        
         # Eliminación
+        delete_layout = QVBoxLayout()
         self.delete_key_input = QLineEdit()
         self.delete_key_input.setPlaceholderText("Clave")
         delete_button = QPushButton("Eliminar")
         delete_button.clicked.connect(self.delete_node)
-
-        control_layout.addWidget(QLabel("Eliminar:"))
-        control_layout.addWidget(self.delete_key_input)
-        control_layout.addWidget(delete_button)
+        delete_layout.addWidget(QLabel("Eliminar:"))
+        delete_layout.addWidget(self.delete_key_input)
+        delete_layout.addWidget(delete_button)
+        control_layout.addLayout(delete_layout)
 
         # Búsqueda
+        search_layout = QVBoxLayout()
         self.search_key_input = QLineEdit()
         self.search_key_input.setPlaceholderText("Clave")
         search_button = QPushButton("Buscar")
         search_button.clicked.connect(self.search_node)
-
-        control_layout.addWidget(QLabel("Buscar:"))
-        control_layout.addWidget(self.search_key_input)
-        control_layout.addWidget(search_button)
+        search_layout.addWidget(QLabel("Buscar:"))
+        search_layout.addWidget(self.search_key_input)
+        search_layout.addWidget(search_button)
+        control_layout.addLayout(search_layout)
 
         main_layout.addLayout(control_layout)
 
@@ -229,47 +220,45 @@ class MainWindow(QMainWindow):
 
         main_layout.addLayout(visualization_layout)
 
-    def handle_rotation(self, tipo_rotacion, clave_y, clave_x):
-        """
-        Callback para manejar rotaciones desde el árbol AVL.
-        Agrega el evento de rotación a la visualización y al registro de rotaciones.
-        """
-        event = (tipo_rotacion, clave_y, clave_x)
-        self.tree_view.add_rotation_event(event)
-        # Agregar el mensaje al registro de rotaciones
-        if tipo_rotacion == "rotacion_derecha":
-            mensaje = f"Rotación Derecha: y={clave_y} ↦ x={clave_x}"
-        elif tipo_rotacion == "rotacion_izquierda":
-            mensaje = f"Rotación Izquierda: y={clave_y} ↦ x={clave_x}"
-        else:
-            mensaje = f"Rotación {tipo_rotacion}: y={clave_y} ↦ x={clave_x}"
-        self.rotation_list.addItem(mensaje)
+        # Agregar botones para cargar y guardar JSON
+        json_layout = QHBoxLayout()
+        load_json_button = QPushButton("Cargar JSON")
+        load_json_button.clicked.connect(self.load_json)
+        save_json_button = QPushButton("Guardar JSON")
+        save_json_button.clicked.connect(self.save_json)
+        json_layout.addWidget(load_json_button)
+        json_layout.addWidget(save_json_button)
+        main_layout.addLayout(json_layout)
 
     def insert_node(self):
         key_text = self.insert_key_input.text()
-        # nombre = self.input_nombre.text()
-        # cantidad = self.input_cantidad.text()
-        # precio = self.input_precio.text()
-        # categoria = self.input_categoria.text()
+        nombre = self.insert_nombre_input.text()
+        cantidad_text = self.insert_cantidad_input.text()
+        precio_text = self.insert_precio_input.text()
+        categoria = self.insert_categoria_input.text()
 
-        if not key_text:
-            QMessageBox.warning(self, "Error", "La clave no puede estar vacía.")
+        if not all([key_text, nombre, cantidad_text, precio_text, categoria]):
+            QMessageBox.warning(self, "Error", "Todos los campos son obligatorios.")
             return
 
         try:
             key = int(key_text)
+            cantidad = int(cantidad_text)
+            precio = float(precio_text)
         except ValueError:
-            QMessageBox.warning(self, "Error", "La clave debe ser un número entero.")
+            QMessageBox.warning(self, "Error", "Clave y cantidad deben ser enteros, y precio debe ser un número.")
             return
 
-        # Verificar si la clave ya existe
-        if self.avl.buscar(key) is not None:
-            QMessageBox.information(self, "Información", f"La clave {key} ya existe en el árbol.")
-            return
-
-        self.avl.insertar(key)
+        self.avl.insertar(key, nombre, cantidad, precio, categoria)
         self.update_ui()
+        self.clear_insert_inputs()
+
+    def clear_insert_inputs(self):
         self.insert_key_input.clear()
+        self.insert_nombre_input.clear()
+        self.insert_cantidad_input.clear()
+        self.insert_precio_input.clear()
+        self.insert_categoria_input.clear()
 
     def delete_node(self):
         key_text = self.delete_key_input.text()
@@ -307,7 +296,12 @@ class MainWindow(QMainWindow):
 
         result = self.avl.buscar(key)
         if result is not None:
-            QMessageBox.information(self, "Resultado de Búsqueda", f"Clave: {result}")
+            message = f"Clave: {result['clave']}\n"
+            message += f"Nombre: {result['nombre']}\n"
+            message += f"Cantidad: {result['cantidad']}\n"
+            message += f"Precio: {result['precio']}\n"
+            message += f"Categoría: {result['categoria']}"
+            QMessageBox.information(self, "Resultado de Búsqueda", message)
         else:
             QMessageBox.information(self, "Resultado de Búsqueda", f"La clave {key} no se encontró en el árbol.")
 
@@ -318,8 +312,47 @@ class MainWindow(QMainWindow):
         # Actualizar la lista de inventario
         self.inventory_list.clear()
         in_order = self.avl.in_order_traversal()
-        for clave in in_order:
-            self.inventory_list.addItem(f"Clave: {clave}")
+        for producto in in_order:
+            self.inventory_list.addItem(
+                f"Clave: {producto['clave']}, Nombre: {producto['nombre']}, "
+                f"Cantidad: {producto['cantidad']}, Precio: {producto['precio']}, "
+                f"Categoría: {producto['categoria']}"
+            )
+
+    def handle_rotation(self, tipo_rotacion, clave_y, clave_x):
+        """
+        Callback para manejar rotaciones desde el árbol AVL.
+        Agrega el evento de rotación a la visualización y al registro de rotaciones.
+        """
+        event = (tipo_rotacion, clave_y, clave_x)
+        self.tree_view.add_rotation_event(event)
+        # Agregar el mensaje al registro de rotaciones
+        if tipo_rotacion == "rotacion_derecha":
+            mensaje = f"Rotación Derecha: y={clave_y} ↦ x={clave_x}"
+        elif tipo_rotacion == "rotacion_izquierda":
+            mensaje = f"Rotación Izquierda: y={clave_y} ↦ x={clave_x}"
+        else:
+            mensaje = f"Rotación {tipo_rotacion}: y={clave_y} ↦ x={clave_x}"
+        self.rotation_list.addItem(mensaje)
+
+    def load_json(self):
+        file_name, _ = QFileDialog.getOpenFileName(self, "Cargar archivo JSON", "", "JSON Files (*.json)")
+        if file_name:
+            try:
+                self.avl.cargar_desde_json(file_name)
+                self.update_ui()
+                QMessageBox.information(self, "Éxito", "Datos cargados correctamente desde JSON.")
+            except Exception as e:
+                QMessageBox.warning(self, "Error", f"Error al cargar el archivo JSON: {str(e)}")
+
+    def save_json(self):
+        file_name, _ = QFileDialog.getSaveFileName(self, "Guardar archivo JSON", "", "JSON Files (*.json)")
+        if file_name:
+            try:
+                self.avl.guardar_en_json(file_name)
+                QMessageBox.information(self, "Éxito", "Datos guardados correctamente en JSON.")
+            except Exception as e:
+                QMessageBox.warning(self, "Error", f"Error al guardar el archivo JSON: {str(e)}")
 
 def main():
     app = QApplication(sys.argv)
