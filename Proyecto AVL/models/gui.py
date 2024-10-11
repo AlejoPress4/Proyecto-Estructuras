@@ -48,7 +48,7 @@ class AVLVisualizer(QGraphicsView):
         self.rotation_events.append(event)
         if not self.is_animating:
             self.is_animating = True
-            self.timer.start(500)  # 500 ms entre eventos
+            self.timer.start(1000)  # 500 ms entre eventos
 
     def process_rotation_event(self):
         if self.rotation_events:
