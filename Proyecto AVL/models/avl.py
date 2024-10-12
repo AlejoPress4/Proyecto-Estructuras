@@ -16,6 +16,11 @@ class AVLTree:
     def __init__(self):
         self.raiz = None
         self.rotation_callback = None  # Callback para rotaciones
+        self.json_file = None # Archivo JSON para guardar la información
+        self.rotations_performed = [] # Lista de rotaciones realizadas
+        
+    def set_json_file(self, file_path):
+        self.json_file = file_path
 
     def set_rotation_callback(self, callback):
         """
@@ -79,6 +84,7 @@ class AVLTree:
 
     def insertar(self, clave, nombre, cantidad, precio, categoria):
         self.raiz = self._insertar(self.raiz, clave, nombre, cantidad, precio, categoria)
+        self._actualizar_json()
 
     def _insertar(self, nodo, clave, nombre, cantidad, precio, categoria):
         # Inserción estándar en BST
@@ -131,58 +137,62 @@ class AVLTree:
         return current
 
     def eliminar(self, clave):
+        self.rotations_performed = [] # Limpiar lista de rotaciones
         self.raiz = self._eliminar(self.raiz, clave)
+        self._actualizar_json()
+        return self.rotations_performed # Retornar lista de rotaciones realizadas
 
     def _eliminar(self, nodo, clave):
-        # Eliminación estándar en BST
         if not nodo:
             return nodo
-        elif clave < nodo.clave:
+
+        if clave < nodo.clave:
             nodo.izquierda = self._eliminar(nodo.izquierda, clave)
         elif clave > nodo.clave:
             nodo.derecha = self._eliminar(nodo.derecha, clave)
         else:
-            # Nodo con una o ninguna subárbol
             if not nodo.izquierda:
-                temp = nodo.derecha
-                nodo = None
-                return temp
+                return nodo.derecha
             elif not nodo.derecha:
-                temp = nodo.izquierda
-                nodo = None
-                return temp
+                return nodo.izquierda
 
-            # Nodo con dos subárboles: obtener el sucesor en orden
             temp = self.min_valor_nodo(nodo.derecha)
             nodo.clave = temp.clave
+            nodo.nombre = temp.nombre
+            nodo.cantidad = temp.cantidad
+            nodo.precio = temp.precio
+            nodo.categoria = temp.categoria
             nodo.derecha = self._eliminar(nodo.derecha, temp.clave)
 
         if not nodo:
             return nodo
 
-        # Actualizar la altura
         nodo.altura = 1 + max(self.obtener_altura(nodo.izquierda),
                               self.obtener_altura(nodo.derecha))
 
-        # Obtener el balance
         balance = self.obtener_balance(nodo)
 
-        # Balancear el árbol
         # Caso Izquierda Izquierda
         if balance > 1 and self.obtener_balance(nodo.izquierda) >= 0:
+            self.rotations_performed.append(f"Rotación Derecha en nodo {nodo.clave}")
             return self.rotacion_derecha(nodo)
 
         # Caso Izquierda Derecha
         if balance > 1 and self.obtener_balance(nodo.izquierda) < 0:
+            self.rotations_performed.append(f"Rotación Izquierda en nodo {nodo.izquierda.clave}")
+            self.rotations_performed.append(f"Rotación Derecha en nodo {nodo.clave}")
             nodo.izquierda = self.rotacion_izquierda(nodo.izquierda)
             return self.rotacion_derecha(nodo)
 
         # Caso Derecha Derecha
         if balance < -1 and self.obtener_balance(nodo.derecha) <= 0:
+            self.rotations_performed.append(f"Rotación Izquierda en nodo {nodo.clave}")
             return self.rotacion_izquierda(nodo)
 
         # Caso Derecha Izquierda
         if balance < -1 and self.obtener_balance(nodo.derecha) > 0:
+            self.rotations_performed.append(f"Rotación Derecha en nodo {nodo.derecha.clave}")
+            self.rotations_performed.append(f"Rotación Izquierda en nodo {nodo.clave}")
             nodo.derecha = self.rotacion_derecha(nodo.derecha)
             return self.rotacion_izquierda(nodo)
 
@@ -236,7 +246,15 @@ class AVLTree:
                 producto['categoria']
             )
 
-    def guardar_en_json(self, archivo_json):
+    def guardar_en_json(self, archivo_json=None):
+        if archivo_json:
+            self.json_file = archivo_json
+        if not self.json_file:
+            raise ValueError("No se ha especificado un archivo JSON")
         datos = self.in_order_traversal()
-        with open(archivo_json, 'w') as file:
+        with open(self.json_file, 'w') as file:
             json.dump(datos, file, indent=2)
+
+    def _actualizar_json(self):
+        if self.json_file:
+            self.guardar_en_json()

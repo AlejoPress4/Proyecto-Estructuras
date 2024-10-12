@@ -1,0 +1,212 @@
+[
+  {
+    "clave": 1,
+    "nombre": "Silla ergonomica",
+    "cantidad": 10,
+    "precio": 120000,
+    "categoria": "Hogar"
+  },
+  {
+    "clave": 2,
+    "nombre": "Olla a presion",
+    "cantidad": 5,
+    "precio": 85000,
+    "categoria": "Cocina"
+  },
+  {
+    "clave": 3,
+    "nombre": "Licuadora industrial",
+    "cantidad": 15,
+    "precio": 150000,
+    "categoria": "Electrodomesticos"
+  },
+  {
+    "clave": 4,
+    "nombre": "Tostadora de pan",
+    "cantidad": 8,
+    "precio": 70000,
+    "categoria": "Electrodomesticos"
+  },
+  {
+    "clave": 5,
+    "nombre": "Set de utensilios de cocina",
+    "cantidad": 20,
+    "precio": 40000,
+    "categoria": "Cocina"
+  },
+  {
+    "clave": 6,
+    "nombre": "Colchon ortopedico",
+    "cantidad": 30,
+    "precio": 220000,
+    "categoria": "Hogar"
+  },
+  {
+    "clave": 7,
+    "nombre": "Estante de madera",
+    "cantidad": 25,
+    "precio": 90000,
+    "categoria": "Hogar"
+  },
+  {
+    "clave": 8,
+    "nombre": "Cafetera electrica",
+    "cantidad": 50,
+    "precio": 120000,
+    "categoria": "Electrodomesticos"
+  },
+  {
+    "clave": 9,
+    "nombre": "Bicicleta de montana",
+    "cantidad": 10,
+    "precio": 350000,
+    "categoria": "Deportes"
+  },
+  {
+    "clave": 10,
+    "nombre": "Pelota de futbol",
+    "cantidad": 5,
+    "precio": 60000,
+    "categoria": "Deportes"
+  },
+  {
+    "clave": 11,
+    "nombre": "Set de pesas",
+    "cantidad": 15,
+    "precio": 80000,
+    "categoria": "Deportes"
+  },
+  {
+    "clave": 12,
+    "nombre": "Tetera de acero inoxidable",
+    "cantidad": 7,
+    "precio": 30000,
+    "categoria": "Cocina"
+  },
+  {
+    "clave": 13,
+    "nombre": "Freidora de aire",
+    "cantidad": 12,
+    "precio": 180000,
+    "categoria": "Electrodomesticos"
+  },
+  {
+    "clave": 14,
+    "nombre": "Microondas",
+    "cantidad": 18,
+    "precio": 250000,
+    "categoria": "Electrodomesticos"
+  },
+  {
+    "clave": 15,
+    "nombre": "Set de cuchillos",
+    "cantidad": 22,
+    "precio": 50000,
+    "categoria": "Cocina"
+  },
+  {
+    "clave": 16,
+    "nombre": "Parrilla electrica",
+    "cantidad": 35,
+    "precio": 90000,
+    "categoria": "Electrodomesticos"
+  },
+  {
+    "clave": 17,
+    "nombre": "Juego de sartenes",
+    "cantidad": 40,
+    "precio": 100000,
+    "categoria": "Cocina"
+  },
+  {
+    "clave": 18,
+    "nombre": "Cinta para correr",
+    "cantidad": 10,
+    "precio": 800000,
+    "categoria": "Deportes"
+  },
+  {
+    "clave": 19,
+    "nombre": "Juego de comedor",
+    "cantidad": 20,
+    "precio": 350000,
+    "categoria": "Hogar"
+  },
+  {
+    "clave": 20,
+    "nombre": "Maquina de coser",
+    "cantidad": 8,
+    "precio": 300000,
+    "categoria": "Electrodomesticos"
+  },
+  {
+    "clave": 21,
+    "nombre": "Raqueta de tenis",
+    "cantidad": 5,
+    "precio": 120000,
+    "categoria": "Deportes"
+  },
+  {
+    "clave": 22,
+    "nombre": "Cinta de yoga",
+    "cantidad": 6,
+    "precio": 45000,
+    "categoria": "Deportes"
+  },
+  {
+    "clave": 23,
+    "nombre": "Colchon inflable",
+    "cantidad": 15,
+    "precio": 65000,
+    "categoria": "Hogar"
+  },
+  {
+    "clave": 24,
+    "nombre": "Aspiradora portatil",
+    "cantidad": 7,
+    "precio": 150000,
+    "categoria": "Electrodomesticos"
+  },
+  {
+    "clave": 25,
+    "nombre": "Tendedero plegable",
+    "cantidad": 9,
+    "precio": 40000,
+    "categoria": "Hogar"
+  },
+  {
+    "clave": 26,
+    "nombre": "Guantes de boxeo",
+    "cantidad": 11,
+    "precio": 90000,
+    "categoria": "Deportes"
+  },
+  {
+    "clave": 27,
+    "nombre": "Lampara de escritorio",
+    "cantidad": 8,
+    "precio": 35000,
+    "categoria": "Hogar"
+  },
+  {
+    "clave": 28,
+    "nombre": "Reloj de pared",
+    "cantidad": 18,
+    "precio": 45000,
+    "categoria": "Hogar"
+  },
+  {
+    "clave": 29,
+    "nombre": "Batidora de mano",
+    "cantidad": 20,
+    "precio": 85000,
+    "categoria": "Electrodomesticos"
+  },
+  {
+    "clave": 30,
+    "nombre": "Termo para agua",
+    "cantidad": 50,
+    "precio": 20000,
+    "categoria": "Cocina"
+  }
+]
