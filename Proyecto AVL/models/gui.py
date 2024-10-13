@@ -5,7 +5,7 @@ from PyQt5.QtWidgets import ( # type: ignore
     QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
     QPushButton, QLineEdit, QLabel, QListWidget, QMessageBox, QGraphicsView,
     QGraphicsScene, QGraphicsEllipseItem, QGraphicsTextItem, QGraphicsLineItem,
-    QFileDialog, QFormLayout, QGroupBox
+    QFileDialog, QFormLayout, QGroupBox, QComboBox
 )
 from PyQt5.QtGui import QPainter, QPen, QBrush, QColor, QIcon  #type: ignore
 from PyQt5.QtCore import Qt, QPointF, QTimer #type: ignore
@@ -22,8 +22,13 @@ class AVLVisualizer(QGraphicsView):
         self.node_radius = 20
         self.level_gap = 100
         self.horizontal_gap = 300
-        self.setMinimumHeight(600)
-        self.setMinimumWidth(800)
+        self.setMinimumHeight(300)
+        self.setMinimumWidth(500)
+        
+        self.search_path = []
+        self.search_index = 0
+        self.search_timer = QTimer()
+        self.search_timer.timeout.connect(self.highlight_next_search_step)
         
         self.setHorizontalScrollBarPolicy(Qt.ScrollBarAsNeeded)
         self.setVerticalScrollBarPolicy(Qt.ScrollBarAsNeeded)
@@ -82,6 +87,8 @@ class AVLVisualizer(QGraphicsView):
         # Determinar el color del nodo
         if node.clave in self.highlighted_nodes:
             ellipse_color = QColor(250, 100, 100)  # Rojo para resaltar
+        elif node.clave in self.search_path[:self.search_index + 1]:
+            ellipse_color = QColor(100, 250, 100)  # Verde para el camino de búsqueda
         else:
             ellipse_color = QColor(100, 200, 250)  # Azul claro por defecto
 
@@ -98,6 +105,21 @@ class AVLVisualizer(QGraphicsView):
     def update_tree(self):
         self.draw_tree()
         
+    def highlight_search_path(self, path):
+        self.search_path = path
+        self.search_index = -1
+        self.search_timer.start(500)  # Resaltar un nodo cada 500 ms
+
+    def highlight_next_search_step(self):
+        self.search_index += 1
+        if self.search_index >= len(self.search_path):
+            self.search_timer.stop()
+        self.draw_tree()
+
+    def clear_search_path(self):
+        self.search_path = []
+        self.search_index = -1
+        self.draw_tree()
         
 class MainWindow(QMainWindow):
     def __init__(self):
@@ -192,6 +214,62 @@ class MainWindow(QMainWindow):
 
         control_layout.addLayout(actions_layout)
         main_layout.addLayout(control_layout)
+        
+        price_range_layout = QVBoxLayout()
+        price_range_group = QGroupBox("Buscar por Rango de Precios")
+        price_range_form = QFormLayout()
+
+        self.min_price_input = QLineEdit()
+        self.max_price_input = QLineEdit()
+        self.min_price_input.setPlaceholderText("Precio mínimo")
+        self.max_price_input.setPlaceholderText("Precio máximo")
+
+        price_range_form.addRow("Precio mínimo:", self.min_price_input)
+        price_range_form.addRow("Precio máximo:", self.max_price_input)
+
+        search_price_range_button = QPushButton("Buscar por Rango")
+        search_price_range_button.clicked.connect(self.search_by_price_range)
+
+        price_range_group.setLayout(price_range_form)
+        price_range_layout.addWidget(price_range_group)
+        price_range_layout.addWidget(search_price_range_button)
+
+        actions_layout.addLayout(price_range_layout)
+        
+        # Agregar un nuevo grupo para la búsqueda por categoría
+        category_search_group = QGroupBox("Buscar por Categoría")
+        category_search_layout = QHBoxLayout()
+
+        self.category_combo = QComboBox()
+        self.category_combo.addItems(["Hogar", "Cocina", "Electrodomesticos", "Deportes"])
+        category_search_layout.addWidget(self.category_combo)
+
+        search_category_button = QPushButton("Buscar por Categoría")
+        search_category_button.clicked.connect(self.search_by_category)
+        category_search_layout.addWidget(search_category_button)
+
+        category_search_group.setLayout(category_search_layout)
+        control_layout.addWidget(category_search_group)
+        
+        # Agregar un nuevo grupo para la búsqueda combinada
+        combined_search_group = QGroupBox("Búsqueda Combinada")
+        combined_search_layout = QFormLayout()
+
+        self.combined_min_price_input = QLineEdit()
+        self.combined_max_price_input = QLineEdit()
+        self.combined_category_combo = QComboBox()
+        self.combined_category_combo.addItems(["Todas", "Hogar", "Cocina", "Electrodomesticos", "Deportes"])
+
+        combined_search_layout.addRow("Precio mínimo:", self.combined_min_price_input)
+        combined_search_layout.addRow("Precio máximo:", self.combined_max_price_input)
+        combined_search_layout.addRow("Categoría:", self.combined_category_combo)
+
+        combined_search_button = QPushButton("Buscar")
+        combined_search_button.clicked.connect(self.perform_combined_search)
+        combined_search_layout.addRow(combined_search_button)
+
+        combined_search_group.setLayout(combined_search_layout)
+        main_layout.addWidget(combined_search_group)
 
         # Layout para la visualización del árbol y los logs de rotación
         visualization_layout = QHBoxLayout()
@@ -228,6 +306,7 @@ class MainWindow(QMainWindow):
         json_layout.addWidget(load_json_button)
         json_layout.addWidget(save_json_button)
         main_layout.addLayout(json_layout)
+        
     def insert_node(self):
         key_text = self.insert_key_input.text()
         nombre = self.insert_nombre_input.text()
@@ -301,7 +380,7 @@ class MainWindow(QMainWindow):
             QMessageBox.warning(self, "Error", "La clave debe ser un número entero.")
             return
 
-        result = self.avl.buscar(key)
+        result, search_path = self.avl.buscar(key)
         if result is not None:
             message = f"Clave: {result['clave']}\n"
             message += f"Nombre: {result['nombre']}\n"
@@ -309,8 +388,13 @@ class MainWindow(QMainWindow):
             message += f"Precio: {result['precio']}\n"
             message += f"Categoría: {result['categoria']}"
             QMessageBox.information(self, "Resultado de Búsqueda", message)
+            
+            # Resaltar el camino de búsqueda
+            self.tree_view.highlight_search_path(search_path)
         else:
             QMessageBox.information(self, "Resultado de Búsqueda", f"La clave {key} no se encontró en el árbol.")
+        
+        self.search_key_input.clear()
 
     def update_ui(self):
         self.tree_view.update_tree()
@@ -350,6 +434,85 @@ class MainWindow(QMainWindow):
             QMessageBox.information(self, "Éxito", "Datos guardados correctamente en JSON.")
         except Exception as e:
             QMessageBox.warning(self, "Error", f"Error al guardar el archivo JSON: {str(e)}")
+            
+    def search_by_price_range(self):
+        try:
+            min_price = float(self.min_price_input.text())
+            max_price = float(self.max_price_input.text())
+        except ValueError:
+            QMessageBox.warning(self, "Error", "Por favor, ingrese valores numéricos válidos para los precios.")
+            return
+
+        if min_price > max_price:
+            QMessageBox.warning(self, "Error", "El precio mínimo no puede ser mayor que el precio máximo.")
+            return
+
+        results = self.avl.buscar_por_rango_precios(min_price, max_price)
+
+        if results:
+            result_text = "Productos encontrados:\n\n"
+            for producto in results:
+                result_text += f"Clave: {producto['clave']}, Nombre: {producto['nombre']}, "
+                result_text += f"Precio: {producto['precio']}, Cantidad: {producto['cantidad']}, "
+                result_text += f"Categoría: {producto['categoria']}\n\n"
+            
+            QMessageBox.information(self, "Resultados de Búsqueda", result_text)
+        else:
+            QMessageBox.information(self, "Resultados de Búsqueda", "No se encontraron productos en el rango de precios especificado.")
+
+        self.min_price_input.clear()
+        self.max_price_input.clear()
+        
+    def search_by_category(self):
+            categoria = self.category_combo.currentText()
+            try:
+                results = self.avl.buscar_por_categoria(categoria)
+                if results:
+                    result_text = f"Productos en la categoría '{categoria}':\n\n"
+                    for producto in results:
+                        result_text += f"ID: {producto['clave']}, Nombre: {producto['nombre']}, "
+                        result_text += f"Precio: {producto['precio']}, Cantidad: {producto['cantidad']}\n\n"
+                    
+                    QMessageBox.information(self, "Resultados de Búsqueda por Categoría", result_text)
+                else:
+                    QMessageBox.information(self, "Resultados de Búsqueda por Categoría", 
+                                            f"No se encontraron productos en la categoría '{categoria}'.")
+            except ValueError as e:
+                QMessageBox.warning(self, "Error", str(e))
+                
+    def perform_combined_search(self):
+        try:
+            precio_min = float(self.combined_min_price_input.text()) if self.combined_min_price_input.text() else None
+            precio_max = float(self.combined_max_price_input.text()) if self.combined_max_price_input.text() else None
+            categoria = self.combined_category_combo.currentText()
+            categoria = None if categoria == "Todas" else categoria
+
+            results, search_path = self.avl.busqueda_combinada(precio_min, precio_max, categoria)
+
+            # Resaltar el camino de búsqueda en la visualización
+            self.tree_view.highlight_search_path(search_path)
+
+            if results:
+                result_text = "Resultados de la búsqueda combinada:\n\n"
+                for producto in results:
+                    result_text += f"ID: {producto['clave']}, Nombre: {producto['nombre']}, "
+                    result_text += f"Precio: {producto['precio']}, Cantidad: {producto['cantidad']}, "
+                    result_text += f"Categoría: {producto['categoria']}\n\n"
+                
+                QMessageBox.information(self, "Resultados de Búsqueda Combinada", result_text)
+            else:
+                QMessageBox.information(self, "Resultados de Búsqueda Combinada", 
+                                        "No se encontraron productos que cumplan con los criterios especificados.")
+
+        except ValueError:
+            QMessageBox.warning(self, "Error", "Por favor, ingrese valores numéricos válidos para los precios.")
+
+    # Agregar un método para limpiar la visualización del camino de búsqueda
+    def clear_search_visualization(self):
+        self.tree_view.clear_search_path()
+
+
+                
 
 def main():
     app = QApplication(sys.argv)
