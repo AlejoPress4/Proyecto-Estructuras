@@ -83,6 +83,8 @@ class AVLTree:
         return y
 
     def insertar(self, clave, nombre, cantidad, precio, categoria):
+        if self.buscar(clave)[0]:
+            raise ValueError(f"La clave {clave} ya existe en el árbol.")
         self.raiz = self._insertar(self.raiz, clave, nombre, cantidad, precio, categoria)
         self._actualizar_json()
 
@@ -129,6 +131,27 @@ class AVLTree:
             return self.rotacion_izquierda(nodo)
 
         return nodo
+    
+    def actualizar_producto(self, clave, nueva_cantidad=None, nuevo_precio=None):
+        def _actualizar_recursivo(nodo):
+            if not nodo:
+                return None
+            
+            if clave == nodo.clave:
+                if nueva_cantidad is not None:
+                    nodo.cantidad = nueva_cantidad
+                if nuevo_precio is not None:
+                    nodo.precio = nuevo_precio
+                return True
+            elif clave < nodo.clave:
+                return _actualizar_recursivo(nodo.izquierda)
+            else:
+                return _actualizar_recursivo(nodo.derecha)
+
+        resultado = _actualizar_recursivo(self.raiz)
+        if resultado:
+            self._actualizar_json()
+        return resultado
 
     def min_valor_nodo(self, nodo):
         current = nodo
@@ -264,14 +287,16 @@ class AVLTree:
             
     def buscar_por_rango_precios(self, precio_min, precio_max):
         resultados = []
-        self._buscar_por_rango_precios(self.raiz, precio_min, precio_max, resultados)
-        return resultados
+        camino_busqueda = []
+        self._buscar_por_rango_precios(self.raiz, precio_min, precio_max, resultados, camino_busqueda)
+        return resultados, camino_busqueda
 
-    def _buscar_por_rango_precios(self, nodo, precio_min, precio_max, resultados):
+    def _buscar_por_rango_precios(self, nodo, precio_min, precio_max, resultados, camino_busqueda):
         if not nodo:
             return
         
-        # Si el precio del nodo actual está en el rango, lo agregamos a los resultados
+        camino_busqueda.append(nodo.clave)
+        
         if precio_min <= nodo.precio <= precio_max:
             resultados.append({
                 "clave": nodo.clave,
@@ -281,32 +306,29 @@ class AVLTree:
                 "categoria": nodo.categoria
             })
         
-        # Si el precio mínimo es menor que el precio del nodo actual,
-        # buscamos en el subárbol izquierdo
         if precio_min < nodo.precio:
-            self._buscar_por_rango_precios(nodo.izquierda, precio_min, precio_max, resultados)
+            self._buscar_por_rango_precios(nodo.izquierda, precio_min, precio_max, resultados, camino_busqueda)
         
-        # Si el precio máximo es mayor que el precio del nodo actual,
-        # buscamos en el subárbol derecho
         if precio_max > nodo.precio:
-            self._buscar_por_rango_precios(nodo.derecha, precio_min, precio_max, resultados)
+            self._buscar_por_rango_precios(nodo.derecha, precio_min, precio_max, resultados, camino_busqueda)
             
     def buscar_por_categoria(self, categoria):
         if categoria not in ["Hogar", "Cocina", "Electrodomesticos", "Deportes"]:
             raise ValueError("Categoría no válida. Debe ser: Hogar, Cocina, Electrodomesticos o Deportes")
         
         resultados = []
-        self._buscar_por_categoria_recursivo(self.raiz, categoria, resultados)
-        return sorted(resultados, key=lambda x: x['clave'])
+        camino_busqueda = []
+        self._buscar_por_categoria_recursivo(self.raiz, categoria, resultados, camino_busqueda)
+        return sorted(resultados, key=lambda x: x['clave']), camino_busqueda
 
-    def _buscar_por_categoria_recursivo(self, nodo, categoria, resultados):
+    def _buscar_por_categoria_recursivo(self, nodo, categoria, resultados, camino_busqueda):
         if not nodo:
             return
         
-        # Primero visitamos el subárbol izquierdo
-        self._buscar_por_categoria_recursivo(nodo.izquierda, categoria, resultados)
+        camino_busqueda.append(nodo.clave)
         
-        # Luego procesamos el nodo actual
+        self._buscar_por_categoria_recursivo(nodo.izquierda, categoria, resultados, camino_busqueda)
+        
         if nodo.categoria == categoria:
             resultados.append({
                 "clave": nodo.clave,
@@ -316,8 +338,7 @@ class AVLTree:
                 "categoria": nodo.categoria
             })
         
-        # Finalmente visitamos el subárbol derecho
-        self._buscar_por_categoria_recursivo(nodo.derecha, categoria, resultados)
+        self._buscar_por_categoria_recursivo(nodo.derecha, categoria, resultados, camino_busqueda)
         
     def busqueda_combinada(self, precio_min=None, precio_max=None, categoria=None):
         resultados = []
@@ -357,3 +378,25 @@ class AVLTree:
         # Decidir si continuar la búsqueda en el subárbol derecho
         if precio_max is None or nodo.precio <= precio_max:
             self._busqueda_combinada_recursiva(nodo.derecha, precio_min, precio_max, categoria, resultados, camino_busqueda)
+            
+    def verificar_stock(self):
+        productos_sin_stock = []
+        self._verificar_stock_recursivo(self.raiz, productos_sin_stock)
+        return productos_sin_stock
+
+    def _verificar_stock_recursivo(self, nodo, productos_sin_stock):
+        if not nodo:
+            return
+        
+        self._verificar_stock_recursivo(nodo.izquierda, productos_sin_stock)
+        
+        if nodo.cantidad == 0:
+            productos_sin_stock.append({
+                "clave": nodo.clave,
+                "nombre": nodo.nombre,
+                "cantidad": nodo.cantidad,
+                "precio": nodo.precio,
+                "categoria": nodo.categoria
+            })
+        
+        self._verificar_stock_recursivo(nodo.derecha, productos_sin_stock)

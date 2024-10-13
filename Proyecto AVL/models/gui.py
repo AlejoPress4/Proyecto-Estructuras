@@ -19,9 +19,9 @@ class AVLVisualizer(QGraphicsView):
         self.scene = QGraphicsScene()
         self.setScene(self.scene)
         self.setRenderHint(QPainter.Antialiasing)
-        self.node_radius = 20
-        self.level_gap = 100
-        self.horizontal_gap = 300
+        self.node_radius = 15
+        self.level_gap = 40
+        self.horizontal_gap = 240
         self.setMinimumHeight(300)
         self.setMinimumWidth(500)
         
@@ -89,6 +89,8 @@ class AVLVisualizer(QGraphicsView):
             ellipse_color = QColor(250, 100, 100)  # Rojo para resaltar
         elif node.clave in self.search_path[:self.search_index + 1]:
             ellipse_color = QColor(100, 250, 100)  # Verde para el camino de búsqueda
+        elif node.cantidad == 0:
+            ellipse_color = QColor(200, 200, 200)  # Gris para productos fuera de stock
         else:
             ellipse_color = QColor(100, 200, 250)  # Azul claro por defecto
 
@@ -108,12 +110,15 @@ class AVLVisualizer(QGraphicsView):
     def highlight_search_path(self, path):
         self.search_path = path
         self.search_index = -1
-        self.search_timer.start(500)  # Resaltar un nodo cada 500 ms
+        self.search_timer.start(500)  
+        
+        
 
     def highlight_next_search_step(self):
         self.search_index += 1
         if self.search_index >= len(self.search_path):
             self.search_timer.stop()
+            QTimer.singleShot(2000, self.clear_search_path)  # Limpiar después de 2 segundos
         self.draw_tree()
 
     def clear_search_path(self):
@@ -184,6 +189,29 @@ class MainWindow(QMainWindow):
 
         insert_group.setLayout(insert_layout)
         control_layout.addWidget(insert_group)
+        
+        # Agregar nuevo grupo para actualizar cantidad y precio
+        update_group = QGroupBox("Actualizar Producto")
+        update_layout = QHBoxLayout()
+        
+        self.update_key_input = QLineEdit()
+        self.update_cantidad_input = QLineEdit()
+        self.update_precio_input = QLineEdit()
+
+        self.update_key_input.setPlaceholderText("Clave")
+        self.update_cantidad_input.setPlaceholderText("Nueva Cantidad")
+        self.update_precio_input.setPlaceholderText("Nuevo Precio")
+
+        for input_field in [self.update_key_input, self.update_cantidad_input, self.update_precio_input]:
+            input_field.setStyleSheet(input_style)
+            update_layout.addWidget(input_field)
+
+        update_button = QPushButton("Actualizar")
+        update_button.clicked.connect(self.update_product)
+        update_layout.addWidget(update_button)
+
+        update_group.setLayout(update_layout)
+        control_layout.addWidget(update_group)
 
         # Eliminación y Búsqueda (mantenidos como estaban)
         actions_layout = QHBoxLayout()
@@ -326,9 +354,46 @@ class MainWindow(QMainWindow):
             QMessageBox.warning(self, "Error", "Clave y cantidad deben ser enteros, y precio debe ser un número.")
             return
 
+        # Verificar si la clave ya existe
+        if self.avl.buscar(key)[0] is not None:
+            QMessageBox.warning(self, "Error", "La clave ya existe en el inventario.")
+            return
+
         self.avl.insertar(key, nombre, cantidad, precio, categoria)
         self.update_ui()
         self.clear_insert_inputs()
+        
+    def update_product(self):
+        key_text = self.update_key_input.text()
+        quantity_text = self.update_cantidad_input.text()
+        price_text = self.update_precio_input.text()
+
+        if not key_text:
+            QMessageBox.warning(self, "Error", "La clave es obligatoria.")
+            return
+
+        try:
+            key = int(key_text)
+            quantity = int(quantity_text) if quantity_text else None
+            price = float(price_text) if price_text else None
+        except ValueError:
+            QMessageBox.warning(self, "Error", "Clave y cantidad deben ser enteros, y precio debe ser un número.")
+            return
+
+        if quantity is None and price is None:
+            QMessageBox.warning(self, "Error", "Debe ingresar al menos una nueva cantidad o un nuevo precio.")
+            return
+
+        result = self.avl.actualizar_producto(key, quantity, price)
+        if result:
+            QMessageBox.information(self, "Éxito", "Producto actualizado correctamente.")
+            self.update_ui()
+        else:
+            QMessageBox.warning(self, "Error", "No se encontró un producto con la clave especificada.")
+
+        self.update_key_input.clear()
+        self.update_cantidad_input.clear()
+        self.update_precio_input.clear()
 
     def clear_insert_inputs(self):
         self.insert_key_input.clear()
@@ -447,7 +512,8 @@ class MainWindow(QMainWindow):
             QMessageBox.warning(self, "Error", "El precio mínimo no puede ser mayor que el precio máximo.")
             return
 
-        results = self.avl.buscar_por_rango_precios(min_price, max_price)
+        results, search_path = self.avl.buscar_por_rango_precios(min_price, max_price)
+        self.tree_view.highlight_search_path(search_path)
 
         if results:
             result_text = "Productos encontrados:\n\n"
@@ -464,21 +530,20 @@ class MainWindow(QMainWindow):
         self.max_price_input.clear()
         
     def search_by_category(self):
-            categoria = self.category_combo.currentText()
-            try:
-                results = self.avl.buscar_por_categoria(categoria)
-                if results:
-                    result_text = f"Productos en la categoría '{categoria}':\n\n"
-                    for producto in results:
-                        result_text += f"ID: {producto['clave']}, Nombre: {producto['nombre']}, "
-                        result_text += f"Precio: {producto['precio']}, Cantidad: {producto['cantidad']}\n\n"
-                    
-                    QMessageBox.information(self, "Resultados de Búsqueda por Categoría", result_text)
-                else:
-                    QMessageBox.information(self, "Resultados de Búsqueda por Categoría", 
-                                            f"No se encontraron productos en la categoría '{categoria}'.")
-            except ValueError as e:
-                QMessageBox.warning(self, "Error", str(e))
+        categoria = self.category_combo.currentText()
+        results, search_path = self.avl.buscar_por_categoria(categoria)
+        self.tree_view.highlight_search_path(search_path)
+
+        if results:
+            result_text = f"Productos en la categoría '{categoria}':\n\n"
+            for producto in results:
+                result_text += f"ID: {producto['clave']}, Nombre: {producto['nombre']}, "
+                result_text += f"Precio: {producto['precio']}, Cantidad: {producto['cantidad']}\n\n"
+            
+            QMessageBox.information(self, "Resultados de Búsqueda por Categoría", result_text)
+        else:
+            QMessageBox.information(self, "Resultados de Búsqueda por Categoría", 
+                                    f"No se encontraron productos en la categoría '{categoria}'.")
                 
     def perform_combined_search(self):
         try:
