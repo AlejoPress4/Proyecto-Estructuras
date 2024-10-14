@@ -13,7 +13,73 @@ from models.avl import AVLTree
 from collections import deque
 
 class AVLVisualizer(QGraphicsView):
+    """
+    Clase que visualiza un árbol AVL utilizando PyQt5.
+
+    Atributos:
+    ----------
+    avl_tree : AVLTree
+        Instancia del árbol AVL que se va a visualizar.
+        
+    scene : QGraphicsScene
+        Escena gráfica donde se dibujará el árbol.
+        
+    node_radius : int
+        Radio de los nodos del árbol.
+        
+    level_gap : int
+        Espacio vertical entre niveles del árbol.
+        
+    horizontal_gap : int
+        Espacio horizontal entre nodos del mismo nivel.
+        
+    search_path : list
+        Lista que almacena el camino de búsqueda en el árbol.
+        
+    search_index : int
+        Índice actual en el camino de búsqueda.
+        
+    search_timer : QTimer
+        Temporizador para animar los pasos de búsqueda.
+        
+    rotation_events : deque
+        Cola de eventos de rotación para animaciones.
+        
+    is_animating : bool
+        Indicador de si hay una animación en curso.
+        
+    highlighted_nodes : set
+        Conjunto de nodos resaltados.
+        
+    timer : QTimer
+        Temporizador para procesar eventos de rotación.
+
+    Métodos:
+    --------
+    __init__(self, avl_tree, parent=None)
+        Inicializa la visualización del árbol AVL.
+        
+    add_rotation_event(self, event)
+        Añade un evento de rotación a la cola de eventos.
+        
+    highlight_next_search_step(self)
+        Resalta el siguiente paso en el camino de búsqueda.
+        
+    process_rotation_event(self)
+        Procesa el siguiente evento de rotación en la cola.
+    """
+
     def __init__(self, avl_tree, parent=None):
+        """
+        Inicializa la visualización del árbol AVL.
+
+        Parámetros:
+        -----------
+        avl_tree : AVLTree
+            Instancia del árbol AVL que se va a visualizar.
+        parent : QWidget, opcional
+            Widget padre de la visualización.
+        """
         super().__init__(parent)
         self.avl_tree = avl_tree
         self.scene = QGraphicsScene()
@@ -41,12 +107,27 @@ class AVLVisualizer(QGraphicsView):
         self.timer.timeout.connect(self.process_rotation_event)
 
     def add_rotation_event(self, event):
+        """
+        Añade un evento de rotación a la cola de eventos.
+
+        Parámetros:
+        -----------
+        event : dict
+            Diccionario que describe el evento de rotación.
+        """
         self.rotation_events.append(event)
         if not self.is_animating:
             self.is_animating = True
             self.timer.start(1000)  # 1000 ms entre eventos
+            
 
     def process_rotation_event(self):
+        """
+        Procesa el siguiente evento de rotación en la cola.
+
+        Este método es llamado por el temporizador para animar las rotaciones
+        en el árbol AVL.
+        """
         if self.rotation_events:
             event = self.rotation_events.popleft()
             tipo_rotacion, clave_y, clave_x = event
@@ -60,17 +141,46 @@ class AVLVisualizer(QGraphicsView):
             self.timer.stop()
             self.is_animating = False
 
+
     def clear_highlight(self):
+        """
+        Limpia los nodos resaltados.
+
+        Este método es llamado para desmarcar los nodos que fueron resaltados
+        durante una animación de rotación.
+        """
         self.highlighted_nodes = set()
         self.draw_tree()
 
+
     def draw_tree(self):
+        """
+        Dibuja el árbol AVL en la escena gráfica.
+
+        Este método limpia la escena actual y dibuja el árbol AVL desde la raíz.
+        """
         self.scene.clear()
         if self.avl_tree.raiz:
             self._draw_node(self.avl_tree.raiz, 0, self.width() / 2, 0)
         self.scene.setSceneRect(self.scene.itemsBoundingRect())
 
+
+
     def _draw_node(self, node, depth, x, parent_x):
+        """
+        Dibuja un nodo específico del árbol AVL.
+
+        Parámetros:
+        -----------
+        node : AVLNode
+            Nodo del árbol AVL que se va a dibujar.
+        depth : int
+            Profundidad del nodo en el árbol.
+        x : float
+            Coordenada x donde se dibujará el nodo.
+        parent_x : float
+            Coordenada x del nodo padre.
+        """
         y = depth * self.level_gap + self.node_radius * 2
 
         if node.izquierda:
@@ -104,30 +214,109 @@ class AVLVisualizer(QGraphicsView):
         text_height = text.boundingRect().height()
         text.setPos(x - text_width / 2, y - text_height / 2)
 
+
     def update_tree(self):
+        """
+        Actualiza la visualización del árbol.
+
+        Este método redibuja el árbol AVL en la escena gráfica.
+        """
         self.draw_tree()
         
+        
     def highlight_search_path(self, path):
+        """
+        Resalta el camino de búsqueda en el árbol.
+
+        Parámetros:
+        -----------
+        path : list
+            Lista de claves que representan el camino de búsqueda.
+        """
         self.search_path = path
         self.search_index = -1
         self.search_timer.start(500)  
         
         
-
     def highlight_next_search_step(self):
+        """
+        Resalta el siguiente paso en el camino de búsqueda.
+
+        Este método es llamado por el temporizador para animar el camino de
+        búsqueda en el árbol AVL.
+        """
         self.search_index += 1
         if self.search_index >= len(self.search_path):
             self.search_timer.stop()
             QTimer.singleShot(2000, self.clear_search_path)  # Limpiar después de 2 segundos
         self.draw_tree()
 
+
     def clear_search_path(self):
+        """
+        Limpia el camino de búsqueda resaltado.
+
+        Este método es llamado para desmarcar el camino de búsqueda después de
+        que la animación haya terminado.
+        """
         self.search_path = []
         self.search_index = -1
         self.draw_tree()
         
+        
 class MainWindow(QMainWindow):
+    """
+    Clase principal de la ventana que maneja la interfaz gráfica del programa de inventario de productos.
+    Hereda de QMainWindow y configura la ventana principal, los widgets y los eventos.
+
+    Atributos:
+    ----------
+    avl : AVLTree
+        Instancia del árbol AVL que maneja la lógica del inventario.
+    insert_key_input : QLineEdit
+        Campo de entrada para la clave del producto a insertar.
+    insert_nombre_input : QLineEdit
+        Campo de entrada para el nombre del producto a insertar.
+    insert_cantidad_input : QLineEdit
+        Campo de entrada para la cantidad del producto a insertar.
+    insert_precio_input : QLineEdit
+        Campo de entrada para el precio del producto a insertar.
+    insert_categoria_input : QLineEdit
+        Campo de entrada para la categoría del producto a insertar.
+    update_key_input : QLineEdit
+        Campo de entrada para la clave del producto a actualizar.
+    update_cantidad_input : QLineEdit
+        Campo de entrada para la nueva cantidad del producto a actualizar.
+    update_precio_input : QLineEdit
+        Campo de entrada para el nuevo precio del producto a actualizar.
+    delete_key_input : QLineEdit
+        Campo de entrada para la clave del producto a eliminar.
+    search_key_input : QLineEdit
+        Campo de entrada para la clave del producto a buscar.
+    min_price_input : QLineEdit
+        Campo de entrada para el precio mínimo en la búsqueda por rango de precios.
+    max_price_input : QLineEdit
+        Campo de entrada para el precio máximo en la búsqueda por rango de precios.
+    category_combo : QComboBox
+        ComboBox para seleccionar la categoría en la búsqueda por categoría.
+    combined_min_price_input : QLineEdit
+        Campo de entrada para el precio mínimo en la búsqueda combinada.
+    combined_max_price_input : QLineEdit
+        Campo de entrada para el precio máximo en la búsqueda combinada.
+    combined_category_combo : QComboBox
+        ComboBox para seleccionar la categoría en la búsqueda combinada.
+    tree_view : AVLVisualizer
+        Widget para visualizar el árbol AVL.
+    inventory_list : QListWidget
+        Lista para mostrar el inventario en orden.
+    rotation_list : QListWidget
+        Lista para mostrar el registro de rotaciones del árbol AVL.
+    """
+
     def __init__(self):
+        """
+        Inicializa la ventana principal, configura el título, el icono y los widgets.
+        """
         super().__init__()
         self.setWindowTitle("Inventario de Productos")
         self.setWindowIcon(QIcon("archivos\\inventario-icono-png.png"))
@@ -136,6 +325,9 @@ class MainWindow(QMainWindow):
         self.init_ui()
 
     def init_ui(self):
+        """
+        Configura la interfaz de usuario, incluyendo los widgets y los layouts.
+        """
         # Widget central
         central_widget = QWidget()
         self.setCentralWidget(central_widget)
@@ -335,6 +527,7 @@ class MainWindow(QMainWindow):
         json_layout.addWidget(save_json_button)
         main_layout.addLayout(json_layout)
         
+        
     def insert_node(self):
         key_text = self.insert_key_input.text()
         nombre = self.insert_nombre_input.text()
@@ -363,7 +556,29 @@ class MainWindow(QMainWindow):
         self.update_ui()
         self.clear_insert_inputs()
         
+        
     def update_product(self):
+        """
+        Actualiza un producto en el árbol AVL.
+
+        Este método se encarga de actualizar la información de un producto en el árbol AVL
+        basado en la clave proporcionada por el usuario. Si la clave no es válida o no se 
+        proporciona una nueva cantidad o precio, se muestra un mensaje de error.
+
+        Widgets involucrados:
+        - self.update_key_input: Campo de texto para ingresar la clave del producto.
+        - self.update_cantidad_input: Campo de texto para ingresar la nueva cantidad del producto.
+        - self.update_precio_input: Campo de texto para ingresar el nuevo precio del producto.
+
+        Pasos:
+        1. Obtiene los valores de los campos de texto.
+        2. Valida que la clave no esté vacía.
+        3. Convierte los valores de texto a los tipos de datos correspondientes.
+        4. Verifica que al menos uno de los campos (cantidad o precio) tenga un valor.
+        5. Llama al método `actualizar_producto` del árbol AVL para actualizar el producto.
+        6. Muestra un mensaje de éxito o error según el resultado de la actualización.
+        7. Limpia los campos de texto.
+        """
         key_text = self.update_key_input.text()
         quantity_text = self.update_cantidad_input.text()
         price_text = self.update_precio_input.text()
@@ -395,14 +610,41 @@ class MainWindow(QMainWindow):
         self.update_cantidad_input.clear()
         self.update_precio_input.clear()
 
+
     def clear_insert_inputs(self):
+        """
+        Limpia los campos de entrada del formulario de inserción.
+
+        Este método se encarga de limpiar todos los campos de texto del formulario de inserción
+        de productos.
+        """
         self.insert_key_input.clear()
         self.insert_nombre_input.clear()
         self.insert_cantidad_input.clear()
         self.insert_precio_input.clear()
         self.insert_categoria_input.clear()
 
+
     def delete_node(self):
+        """
+        Elimina un nodo del árbol AVL.
+
+        Este método se encarga de eliminar un nodo del árbol AVL basado en la clave proporcionada
+        por el usuario. Si la clave no es válida o no existe en el árbol, se muestra un mensaje de error.
+
+        Widgets involucrados:
+        - self.delete_key_input: Campo de texto para ingresar la clave del nodo a eliminar.
+
+        Pasos:
+        1. Obtiene el valor del campo de texto.
+        2. Valida que la clave no esté vacía.
+        3. Convierte el valor de texto a un entero.
+        4. Verifica si la clave existe en el árbol.
+        5. Llama al método `eliminar` del árbol AVL para eliminar el nodo.
+        6. Actualiza la interfaz de usuario.
+        7. Muestra un mensaje detallado de las rotaciones realizadas durante la eliminación.
+        8. Limpia el campo de texto.
+        """
         key_text = self.delete_key_input.text()
 
         if not key_text:
@@ -432,7 +674,26 @@ class MainWindow(QMainWindow):
         QMessageBox.information(self, "Éxito", 
                                 f"El nodo con clave {key} ha sido eliminado y el árbol se ha balanceado.\n\n{rotation_message}")
 
+
     def search_node(self):
+        """
+        Busca un nodo en el árbol AVL.
+
+        Este método se encarga de buscar un nodo en el árbol AVL basado en la clave proporcionada
+        por el usuario. Si la clave no es válida o no existe en el árbol, se muestra un mensaje de error.
+
+        Widgets involucrados:
+        - self.search_key_input: Campo de texto para ingresar la clave del nodo a buscar.
+
+        Pasos:
+        1. Obtiene el valor del campo de texto.
+        2. Valida que la clave no esté vacía.
+        3. Convierte el valor de texto a un entero.
+        4. Llama al método `buscar` del árbol AVL para buscar el nodo.
+        5. Muestra la información del nodo encontrado o un mensaje de error si no se encuentra.
+        6. Resalta el camino de búsqueda en la visualización del árbol.
+        7. Limpia el campo de texto.
+        """
         key_text = self.search_key_input.text()
 
         if not key_text:
@@ -461,7 +722,24 @@ class MainWindow(QMainWindow):
         
         self.search_key_input.clear()
 
+
     def update_ui(self):
+        """
+        Actualiza la interfaz de usuario.
+
+        Este método se encarga de actualizar la visualización del árbol y la lista de inventario
+        en la interfaz de usuario.
+
+        Widgets involucrados:
+        - self.tree_view: Vista del árbol AVL.
+        - self.inventory_list: Lista de inventario.
+
+        Pasos:
+        1. Actualiza la visualización del árbol.
+        2. Limpia la lista de inventario.
+        3. Realiza un recorrido in-order del árbol AVL.
+        4. Agrega cada producto del recorrido a la lista de inventario.
+        """
         self.tree_view.update_tree()
         self.inventory_list.clear()
         in_order = self.avl.in_order_traversal()
@@ -472,12 +750,51 @@ class MainWindow(QMainWindow):
                 f"Categoría: {producto['categoria']}"
             )
             
+            
     def handle_rotation(self, tipo_rotacion, clave_y, clave_x):
+        """
+        Maneja las rotaciones del árbol AVL.
+
+        Este método se encarga de registrar y mostrar las rotaciones realizadas durante
+        las operaciones de balanceo del árbol AVL.
+
+        Widgets involucrados:
+        - self.tree_view: Vista del árbol AVL.
+        - self.rotation_list: Lista de rotaciones.
+
+        Parámetros:
+        - tipo_rotacion: Tipo de rotación realizada (rotacion_derecha o rotacion_izquierda).
+        - clave_y: Clave del nodo y involucrado en la rotación.
+        - clave_x: Clave del nodo x involucrado en la rotación.
+
+        Pasos:
+        1. Crea un evento de rotación con los parámetros proporcionados.
+        2. Agrega el evento de rotación a la visualización del árbol.
+        3. Crea un mensaje descriptivo de la rotación.
+        4. Agrega el mensaje a la lista de rotaciones.
+        """
         event = (tipo_rotacion, clave_y, clave_x)
         self.tree_view.add_rotation_event(event)
         mensaje = f"Rotación {'Derecha' if tipo_rotacion == 'rotacion_derecha' else 'Izquierda'}: y={clave_y} ↦ x={clave_x}"
         self.rotation_list.addItem(mensaje)
+        
+        
     def load_json(self):
+        """
+        Carga datos desde un archivo JSON.
+
+        Este método se encarga de cargar datos en el árbol AVL desde un archivo JSON
+        seleccionado por el usuario.
+
+        Widgets involucrados:
+        - QFileDialog: Diálogo para seleccionar el archivo JSON.
+
+        Pasos:
+        1. Abre un diálogo para seleccionar el archivo JSON.
+        2. Llama al método `cargar_desde_json` del árbol AVL para cargar los datos.
+        3. Actualiza la interfaz de usuario.
+        4. Muestra un mensaje de éxito o error según el resultado de la carga.
+        """
         file_name, _ = QFileDialog.getOpenFileName(self, "Cargar archivo JSON", "", "JSON Files (*.json)")
         if file_name:
             try:
@@ -487,7 +804,24 @@ class MainWindow(QMainWindow):
             except Exception as e:
                 QMessageBox.warning(self, "Error", f"Error al cargar el archivo JSON: {str(e)}")
                 
+                
     def save_json(self):
+        """
+        Guarda datos en un archivo JSON.
+
+        Este método se encarga de guardar los datos del árbol AVL en un archivo JSON.
+        Si no se ha especificado un archivo previamente, se abre un diálogo para seleccionar
+        la ubicación y el nombre del archivo.
+
+        Widgets involucrados:
+        - QFileDialog: Diálogo para seleccionar el archivo JSON.
+
+        Pasos:
+        1. Verifica si ya se ha especificado un archivo JSON.
+        2. Si no, abre un diálogo para seleccionar la ubicación y el nombre del archivo.
+        3. Llama al método `guardar_en_json` del árbol AVL para guardar los datos.
+        4. Muestra un mensaje de éxito o error según el resultado del guardado.
+        """
         if not self.avl.json_file:
             file_name, _ = QFileDialog.getSaveFileName(self, "Guardar archivo JSON", "", "JSON Files (*.json)")
             if not file_name:
@@ -500,7 +834,27 @@ class MainWindow(QMainWindow):
         except Exception as e:
             QMessageBox.warning(self, "Error", f"Error al guardar el archivo JSON: {str(e)}")
             
+            
     def search_by_price_range(self):
+        """
+        Busca productos en un rango de precios.
+
+        Este método se encarga de buscar productos en el árbol AVL cuyo precio esté dentro
+        del rango especificado por el usuario.
+
+        Widgets involucrados:
+        - self.min_price_input: Campo de texto para ingresar el precio mínimo.
+        - self.max_price_input: Campo de texto para ingresar el precio máximo.
+
+        Pasos:
+        1. Obtiene los valores de los campos de texto.
+        2. Convierte los valores de texto a flotantes.
+        3. Valida que el precio mínimo no sea mayor que el precio máximo.
+        4. Llama al método `buscar_por_rango_precios` del árbol AVL para buscar los productos.
+        5. Resalta el camino de búsqueda en la visualización del árbol.
+        6. Muestra los productos encontrados o un mensaje de error si no se encuentran.
+        7. Limpia los campos de texto.
+        """
         try:
             min_price = float(self.min_price_input.text())
             max_price = float(self.max_price_input.text())
@@ -529,7 +883,23 @@ class MainWindow(QMainWindow):
         self.min_price_input.clear()
         self.max_price_input.clear()
         
+        
     def search_by_category(self):
+        """
+        Busca productos por categoría.
+
+        Este método se encarga de buscar productos en el árbol AVL que pertenezcan a la categoría
+        especificada por el usuario.
+
+        Widgets involucrados:
+        - self.category_combo: ComboBox para seleccionar la categoría.
+
+        Pasos:
+        1. Obtiene la categoría seleccionada del ComboBox.
+        2. Llama al método `buscar_por_categoria` del árbol AVL para buscar los productos.
+        3. Resalta el camino de búsqueda en la visualización del árbol.
+        4. Muestra los productos encontrados o un mensaje de error si no se encuentran.
+        """
         categoria = self.category_combo.currentText()
         results, search_path = self.avl.buscar_por_categoria(categoria)
         self.tree_view.highlight_search_path(search_path)
@@ -545,7 +915,26 @@ class MainWindow(QMainWindow):
             QMessageBox.information(self, "Resultados de Búsqueda por Categoría", 
                                     f"No se encontraron productos en la categoría '{categoria}'.")
                 
+                
     def perform_combined_search(self):
+        """
+        Realiza una búsqueda combinada de productos.
+
+        Este método se encarga de buscar productos en el árbol AVL que cumplan con los criterios
+        combinados de precio y categoría especificados por el usuario.
+
+        Widgets involucrados:
+        - self.combined_min_price_input: Campo de texto para ingresar el precio mínimo.
+        - self.combined_max_price_input: Campo de texto para ingresar el precio máximo.
+        - self.combined_category_combo: ComboBox para seleccionar la categoría.
+
+        Pasos:
+        1. Obtiene los valores de los campos de texto y ComboBox.
+        2. Convierte los valores de texto a flotantes.
+        3. Llama al método `busqueda_combinada` del árbol AVL para buscar los productos.
+        4. Resalta el camino de búsqueda en la visualización del árbol.
+        5. Muestra los productos encontrados o un mensaje de error si no se encuentran.
+        """
         try:
             precio_min = float(self.combined_min_price_input.text()) if self.combined_min_price_input.text() else None
             precio_max = float(self.combined_max_price_input.text()) if self.combined_max_price_input.text() else None
@@ -574,12 +963,38 @@ class MainWindow(QMainWindow):
 
     # Agregar un método para limpiar la visualización del camino de búsqueda
     def clear_search_visualization(self):
+        """
+        Limpia la visualización del camino de búsqueda.
+
+        Este método se encarga de limpiar cualquier resaltado o visualización del camino de búsqueda
+        en la vista del árbol AVL.
+
+        Widgets involucrados:
+        - self.tree_view: Vista del árbol AVL.
+
+        Pasos:
+        1. Llama al método `clear_search_path` de la vista del árbol para limpiar el resaltado.
+        """
         self.tree_view.clear_search_path()
 
 
-                
-
 def main():
+    """
+    Función principal que inicia la aplicación.
+
+    Esta función se encarga de inicializar la aplicación Qt, crear la ventana principal
+    y ejecutar el bucle de eventos de la aplicación.
+
+    Pasos:
+    1. Crea una instancia de QApplication.
+    2. Crea una instancia de la ventana principal (MainWindow).
+    3. Muestra la ventana principal.
+    4. Inicia el bucle de eventos de la aplicación y espera a que se cierre.
+
+    Widgets involucrados:
+    - QApplication: Clase principal de la aplicación Qt.
+    - MainWindow: Ventana principal de la aplicación.
+    """
     app = QApplication(sys.argv)
     window = MainWindow()
     window.show()
