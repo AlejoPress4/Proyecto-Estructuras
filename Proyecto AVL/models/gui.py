@@ -316,6 +316,18 @@ class MainWindow(QMainWindow):
     def __init__(self):
         """
         Inicializa la ventana principal, configura el título, el icono y los widgets.
+        
+        Este método se encarga de inicializar la ventana principal de la aplicación,
+        configurando el título, el icono y los widgets necesarios para la interfaz gráfica.
+        También inicializa el árbol AVL y establece el callback para manejar las rotaciones.
+
+        Pasos:
+        1. Llama al constructor de la clase base.
+        2. Configura el título de la ventana.
+        3. Configura el icono de la ventana.
+        4. Inicializa el árbol AVL.
+        5. Establece el callback para manejar las rotaciones del árbol AVL.
+        6. Llama al método `init_ui` para configurar la interfaz de usuario.
         """
         super().__init__()
         self.setWindowTitle("Inventario de Productos")
@@ -327,6 +339,17 @@ class MainWindow(QMainWindow):
     def init_ui(self):
         """
         Configura la interfaz de usuario, incluyendo los widgets y los layouts.
+        
+        Este método se encarga de configurar todos los elementos de la interfaz gráfica,
+        incluyendo los widgets y los layouts necesarios para la funcionalidad de la aplicación.
+
+        Pasos:
+        1. Crea el widget central y establece el layout principal.
+        2. Configura el área de control con formularios para insertar, actualizar, eliminar y buscar productos.
+        3. Configura los estilos de los campos de entrada.
+        4. Configura los botones y sus eventos asociados.
+        5. Configura la visualización del árbol AVL y las listas de inventario y rotaciones.
+        6. Agrega botones para cargar y guardar datos en formato JSON.
         """
         # Widget central
         central_widget = QWidget()
